@@ -48,6 +48,8 @@ def read_pdf(
     flag_size : bool, optional (default: False)
         Flag text based on font size. Useful to detect
         super/subscripts. Adds <s></s> around flagged text.
+    flag_font: bool, optional (default: False)
+        Wrap cell text in <b font="...">...</b>
     strip_text : str, optional (default: '')
         Characters that should be stripped from a string before
         assigning it to a cell.

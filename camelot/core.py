@@ -9,6 +9,7 @@ from operator import itemgetter
 
 import numpy as np
 import pandas as pd
+import re
 
 
 # minimum number of vertical textline intersections for a textedge
@@ -267,7 +268,8 @@ class Cell(object):
         Whether or not cell spans vertically.
     text : string
         Text assigned to cell.
-
+    fill: any
+        Fill color from PDF
     """
 
     def __init__(self, x1, y1, x2, y2):
@@ -286,6 +288,7 @@ class Cell(object):
         self.hspan = False
         self.vspan = False
         self._text = ""
+        self._fill = None
 
     def __repr__(self):
         x1 = round(self.x1, 2)
@@ -300,13 +303,24 @@ class Cell(object):
 
     @text.setter
     def text(self, t):
-        self._text = "".join([self._text, t])
+        joined_text = "".join([self._text, t])
+        if re.match(r'(?P<font><b font=".+">)(.+)</b>(?P=font)(.+)</b>', joined_text):
+            joined_text = re.sub(r'(?P<font><b font=".+">)(.+)</b>(?P=font)(.+)</b>', r"\1\2\3</b>", joined_text)
+        self._text = joined_text
 
     @property
     def bound(self):
         """The number of sides on which the cell is bounded.
         """
         return self.top + self.bottom + self.left + self.right
+
+    @property
+    def fill(self):
+        return self._fill
+
+    @fill.setter
+    def fill(self, f):
+        self._fill = f
 
 
 class Table(object):

@@ -25,6 +25,7 @@ from pdfminer.layout import (
     LTTextLineHorizontal,
     LTTextLineVertical,
     LTImage,
+    LTRect
 )
 
 from urllib.request import Request, urlopen
@@ -511,7 +512,7 @@ def text_strip(text, strip=""):
 # (inspired from sklearn.pipeline.Pipeline)
 
 
-def flag_font_size(textline, direction, strip_text=""):
+def flag_font_size(textline, direction, strip_text="", flag_font=False, flag_size=True):
     """Flags super/subscripts in text by enclosing them with <s></s>.
     May give false positives.
 
@@ -532,20 +533,57 @@ def flag_font_size(textline, direction, strip_text=""):
     """
     if direction == "horizontal":
         d = [
-            (t.get_text(), np.round(t.height, decimals=6))
+            (t.get_text(), np.round(t.height, decimals=6), t.fontname)
             for t in textline
             if not isinstance(t, LTAnno)
         ]
     elif direction == "vertical":
         d = [
-            (t.get_text(), np.round(t.width, decimals=6))
+            (t.get_text(), np.round(t.width, decimals=6), t.fontname)
             for t in textline
             if not isinstance(t, LTAnno)
         ]
-    l = [np.round(size, decimals=6) for text, size in d]
-    if len(set(l)) > 1:
+    sizes = set([size for text, size, fontname in d])
+    min_size = min(sizes)
+    text_list = []
+    font_stack= []
+    if flag_font:
+        font_stack.append(d[0][2])
+        text_list.append('<b font="' + font_stack[-1] + '">')
+    size_stack = []
+    for text_block in d:
+        block_font = text_block[2]
+        block_size = text_block[1]
+        if flag_font and (block_font != font_stack[-1]):
+            if len(font_stack) > 1 and block_font == font_stack[-2]:
+                for ss in size_stack:
+                    text_list.append("</s>")
+                size_stack = []
+                text_list.append("</b>")
+                font_stack.pop()
+            else:
+                font_stack.append(block_font)
+                text_list.append('<b font="' + block_font + '">')
+        if flag_size and len(sizes)>1:
+            if block_size == min_size:
+                if len(size_stack) == 0:
+                    size_stack.append(block_size)
+                    text_list.append("<s>")
+            elif block_size > min_size and len(size_stack)>0:
+                size_stack.pop()
+                text_list.append("</s>")
+        text_list.append(text_block[0])
+    for ss in size_stack:
+        text_list.append("</s>")
+    if flag_font:
+        for f in font_stack:
+            text_list.append("</b>")
+    return text_strip("".join(text_list), strip_text)
+
+    '''
+    if len(sizes) > 1:
         flist = []
-        min_size = min(l)
+        min_size = min(sizes)
         for key, chars in groupby(d, itemgetter(1)):
             if key == min_size:
                 fchars = [t[0] for t in chars]
@@ -561,7 +599,7 @@ def flag_font_size(textline, direction, strip_text=""):
     else:
         fstring = "".join([t.get_text() for t in textline])
     return text_strip(fstring, strip_text)
-
+    '''
 
 def split_textline(table, textline, direction, flag_size=False, strip_text=""):
     """Splits PDFMiner LTTextLine into substrings if it spans across
@@ -682,7 +720,7 @@ def split_textline(table, textline, direction, flag_size=False, strip_text=""):
 
 
 def get_table_index(
-    table, t, direction, split_text=False, flag_size=False, strip_text=""
+    table, t, direction, split_text=False, flag_size=False, flag_font=False, strip_text=""
 ):
     """Gets indices of the table cell where given text object lies by
     comparing their y and x-coordinates.
@@ -701,6 +739,8 @@ def get_table_index(
         Whether or not to highlight a substring using <s></s>
         if its size is different from rest of the string. (Useful for
         super and subscripts)
+    flag_font : bool, optional (default: False)
+        Whether or not to include font information using <b></b>
     strip_text : str, optional (default: '')
         Characters that should be stripped from a string before
         assigning it to a cell.
@@ -767,13 +807,13 @@ def get_table_index(
             error,
         )
     else:
-        if flag_size:
+        if flag_size or flag_font:
             return (
                 [
                     (
                         r_idx,
                         c_idx,
-                        flag_font_size(t._objs, direction, strip_text=strip_text),
+                        flag_font_size(t._objs, direction, strip_text=strip_text, flag_font=flag_font, flag_size=flag_size),
                     )
                 ],
                 error,
@@ -928,3 +968,33 @@ def get_text_objects(layout, ltype="char", t=None):
     except AttributeError:
         pass
     return t
+
+def get_rect_objects(layout, t=None):
+    """Recursively parses pdf layout to get a list of
+    PDFMiner LTRect objects.
+
+    Parameters
+    ----------
+    layout : object
+        PDFMiner LTPage object.
+    t : list
+
+    Returns
+    -------
+    t : list
+        List of PDFMiner text objects.
+
+    """
+    if t is None:
+        t = []
+    try:
+        for obj in layout._objs:
+            if isinstance(obj, LTRect):
+                t.append(obj)
+            else:
+                t += get_rect_objects(obj)
+    except AttributeError:
+        pass
+    return t
+
+

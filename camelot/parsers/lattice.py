@@ -66,6 +66,8 @@ class Lattice(BaseParser):
     flag_size : bool, optional (default: False)
         Flag text based on font size. Useful to detect
         super/subscripts. Adds <s></s> around flagged text.
+    flag_font : bool, optional (default: False)
+        Flag text based on font. Adds <b font='...'></b> around text.
     strip_text : str, optional (default: '')
         Characters that should be stripped from a string before
         assigning it to a cell.
@@ -104,6 +106,7 @@ class Lattice(BaseParser):
         shift_text=["l", "t"],
         split_text=False,
         flag_size=False,
+        flag_font=False,
         strip_text="",
         line_tol=2,
         joint_tol=2,
@@ -121,6 +124,7 @@ class Lattice(BaseParser):
         self.shift_text = shift_text
         self.split_text = split_text
         self.flag_size = flag_size
+        self.flag_font = flag_font
         self.strip_text = strip_text
         self.line_tol = line_tol
         self.joint_tol = joint_tol
@@ -346,6 +350,7 @@ class Lattice(BaseParser):
                     direction,
                     split_text=self.split_text,
                     flag_size=self.flag_size,
+                    flag_font=self.flag_font,
                     strip_text=self.strip_text,
                 )
                 if indices[:2] != (-1, -1):
@@ -355,6 +360,7 @@ class Lattice(BaseParser):
                     )
                     for r_idx, c_idx, text in indices:
                         table.cells[r_idx][c_idx].text = text
+                        table.cells[r_idx][c_idx].fill = self.find_rectangles(table.cells[r_idx][c_idx])
         accuracy = compute_accuracy([[100, pos_errors]])
 
         if self.copy_text is not None:

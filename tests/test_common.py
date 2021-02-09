@@ -116,7 +116,6 @@ def test_stream_flag_size():
     tables = camelot.read_pdf(filename, flavor="stream", flag_size=True)
     assert_frame_equal(df, tables[0].df)
 
-
 def test_stream_strip_text():
     df = pd.DataFrame(data_stream_strip_text)
 
@@ -223,6 +222,11 @@ def test_lattice_shift_text():
     tables = camelot.read_pdf(filename, line_scale=40, shift_text=["r", "b"])
     assert df_rb.equals(tables[0].df)
 
+def test_lattice_font_flag():
+    filename = os.path.join(testdir, "Volve.pdf")
+    tables = camelot.read_pdf(filename, flag_font=False, pages="7")
+    tables_flagged = camelot.read_pdf(filename, flag_font=True, pages="7")
+    print(tables[2].df)
 
 def test_repr():
     filename = os.path.join(testdir, "foo.pdf")
