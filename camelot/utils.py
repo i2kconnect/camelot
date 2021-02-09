@@ -549,7 +549,7 @@ def flag_font_size(textline, direction, strip_text="", flag_font=False, flag_siz
     font_stack= []
     if flag_font:
         font_stack.append(d[0][2])
-        text_list.append('<b font="' + font_stack[-1] + '">')
+        text_list.append('<em font="' + font_stack[-1] + '">')
     size_stack = []
     for text_block in d:
         block_font = text_block[2]
@@ -559,11 +559,11 @@ def flag_font_size(textline, direction, strip_text="", flag_font=False, flag_siz
                 for ss in size_stack:
                     text_list.append("</s>")
                 size_stack = []
-                text_list.append("</b>")
+                text_list.append("</em>")
                 font_stack.pop()
             else:
                 font_stack.append(block_font)
-                text_list.append('<b font="' + block_font + '">')
+                text_list.append('<em font="' + block_font + '">')
         if flag_size and len(sizes)>1:
             if block_size == min_size:
                 if len(size_stack) == 0:
@@ -577,29 +577,8 @@ def flag_font_size(textline, direction, strip_text="", flag_font=False, flag_siz
         text_list.append("</s>")
     if flag_font:
         for f in font_stack:
-            text_list.append("</b>")
+            text_list.append("</em>")
     return text_strip("".join(text_list), strip_text)
-
-    '''
-    if len(sizes) > 1:
-        flist = []
-        min_size = min(sizes)
-        for key, chars in groupby(d, itemgetter(1)):
-            if key == min_size:
-                fchars = [t[0] for t in chars]
-                if "".join(fchars).strip():
-                    fchars.insert(0, "<s>")
-                    fchars.append("</s>")
-                    flist.append("".join(fchars))
-            else:
-                fchars = [t[0] for t in chars]
-                if "".join(fchars).strip():
-                    flist.append("".join(fchars))
-        fstring = "".join(flist)
-    else:
-        fstring = "".join([t.get_text() for t in textline])
-    return text_strip(fstring, strip_text)
-    '''
 
 def split_textline(table, textline, direction, flag_size=False, strip_text=""):
     """Splits PDFMiner LTTextLine into substrings if it spans across

@@ -301,11 +301,13 @@ class Cell(object):
     def text(self):
         return self._text
 
+    _em_regex = r'(?P<font><em font=".+">)(.+)</em>(?P=font)(.+)</em>'
+
     @text.setter
     def text(self, t):
         joined_text = "".join([self._text, t])
-        if re.match(r'(?P<font><b font=".+">)(.+)</b>(?P=font)(.+)</b>', joined_text):
-            joined_text = re.sub(r'(?P<font><b font=".+">)(.+)</b>(?P=font)(.+)</b>', r"\1\2\3</b>", joined_text)
+        if re.match(Cell._em_regex, joined_text):
+            joined_text = re.sub(Cell._em_regex, r"\1\2\3</em>", joined_text)
         self._text = joined_text
 
     @property
